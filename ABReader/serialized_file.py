@@ -1,8 +1,8 @@
-from bin_reader import BinaryReader
+from ABReader.bin_reader import BinaryReader
+from ABReader.utils import uint_to_int
 import json
-from utils import uint_to_int
 
-FILE_TYPES = json.load(open("types.json", "r"))
+FILE_TYPES = json.load(open("ABReader/types.json", "r"))
 
 
 class SerializedFile:

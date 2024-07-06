@@ -2,7 +2,7 @@ from time import sleep
 from PIL import Image
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 

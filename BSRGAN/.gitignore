@@ -1,0 +1,4 @@
+**/*.log
+figs
+model_zoo/*
+**/__pycache__

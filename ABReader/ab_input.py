@@ -1,10 +1,10 @@
-from texture2d_reader import Texture2DReader
-from mesh_reader import MeshReader
-from bin_reader import BinaryReader
-from serialized_file import SerializedFile
+from ABReader.texture2d_reader import Texture2DReader
+from ABReader.mesh_reader import MeshReader
+from ABReader.bin_reader import BinaryReader
+from ABReader.serialized_file import SerializedFile
 import json
 
-CLASS_ID_TYPES = json.load(open("class_types.json"))
+CLASS_ID_TYPES = json.load(open("ABReader/class_types.json"))
 
 
 class CompType:

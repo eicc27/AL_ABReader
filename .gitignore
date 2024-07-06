@@ -1,3 +1,10 @@
 __pycache__
 **/main.py
 **/test.py
+**/*.bin
+**/*.png
+**/*.obj
+AssetBundles/
+**/venv/
+decoded/
+rendered/

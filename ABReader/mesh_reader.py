@@ -1,6 +1,6 @@
-from serialized_file import SerializedFile
-from bin_reader import BinaryReader
-from utils import int_to_float32, get_bit, bytes_to_float32s
+from ABReader.serialized_file import SerializedFile
+from ABReader.bin_reader import BinaryReader
+from ABReader.utils import int_to_float32, get_bit, bytes_to_float32s
 
 VERTEX_FMT = [
     "Float",
@@ -86,12 +86,11 @@ class MeshReader:
         self.idx_buf = self.read_idx_buf()
         self.vertex_data = self.read_vertex_data()
         self.read_compressed_mesh()
-        self.process_data() # vertices, uv0
-        self.get_triangles() # indices
+        self.process_data()  # vertices, uv0
+        self.get_triangles()  # indices
         print("Vertices: ", self.vertices[:10])
         print("UV0: ", self.uv0[:10])
         print("Indices: ", self.indices[:10])
-
 
     def read_submeshes(self):
         submesh_nums = self.reader.decode_hex(4 * 16, strip=False, reverse=True)

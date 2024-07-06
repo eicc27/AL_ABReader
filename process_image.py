@@ -1,3 +1,4 @@
+from ABReader.char_input import ABCharacterInput
 from ImageDecoders.texture import MeshTexture2D
 from ImageDecoders.head import Heading
 from ImageDecoders.utils import *
@@ -17,6 +18,11 @@ class ImagePipeline:
     def __init__(self) -> None:
         self.render_output: str = None
         self.faces_output: str = None
+
+    def decode(self, base_dir: str, out_dir: str, char_name: str):
+        print(f"Decoding AB files of {char_name} to {out_dir}...")
+        ABCharacterInput(base_dir, char_name).decode(out_dir)
+        print(f"Decoding done, written to {out_dir}.")
 
     def render(
         self, out_file: str, texture_file: str, mesh_file: str = None, processes=4
@@ -107,27 +113,8 @@ class ImagePipeline:
 
 
 if __name__ == "__main__":
-    # from texture to faces SR
-    (
-        ImagePipeline()
-        .render(
-            out_file="assets/feiyun/feiyun_2.png",
-            texture_file="assets/feiyun/feiyun_2/Texture2D/feiyun_2.png",
-            mesh_file="assets/feiyun/feiyun_2/Mesh/feiyun_2-mesh.obj",
-        )
-        .apply_faces(
-            heads_path="assets/feiyun/heads",
-            out_dir="assets/feiyun/feiyun_2_heads",
-            layers=6,
-            factor=2,
-            metric=partial(ssim, abs=True, exps=(1, 1, 2), consts=(1e-4, 3e-4, 1.5e-4)),
-        )
-        # .super_resolution(
-        #     output_path="assets/feiyun/feiyun_2_heads_SR",
-        #     model_name="BSRGANx2",
-        # )
-    )
-    # single SR on bg image
-    # ImagePipeline().super_resolution(
-    #     target_path="assets/bg", model_name="BSRGAN", output_path="assets/output"
-    # )
+    # decode
+    out_dir = "decoded"
+    # ImagePipeline().decode("AssetBundles", out_dir, "ankeleiqi")
+    # render
+    render_dir = "rendered"

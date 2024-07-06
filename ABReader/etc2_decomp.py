@@ -1,8 +1,6 @@
 # from Texture2DDecoderNative, etc.cpp
 import numpy as np
 import struct
-from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor as TPE
 
 WRITE_ORDER = [0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15]
 

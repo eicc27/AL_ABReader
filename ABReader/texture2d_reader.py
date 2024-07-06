@@ -1,7 +1,7 @@
-from serialized_file import SerializedFile
+from ABReader.serialized_file import SerializedFile
 import json
 
-IMG_TYPES = json.load(open("image_types.json"))
+IMG_TYPES = json.load(open("ABReader/image_types.json"))
 
 
 class Texture2DReader:
