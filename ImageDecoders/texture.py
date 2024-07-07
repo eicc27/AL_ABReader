@@ -2,7 +2,7 @@ from time import sleep
 from PIL import Image
 import numpy as np
 import torch
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 
@@ -15,16 +15,6 @@ def show_image(image: np.ndarray):
     image.show()
 
 
-def triangle_area(x1, y1, x2, y2, x3, y3):
-    """Calculate the area of the triangle using PyTorch."""
-    return torch.abs(x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) / 2
-
-
-def horizontal_flip(v0: V, v1: V, v2: V):
-    mid_2 = min([vi[0] for vi in [v0, v1, v2]]) + max([vi[0] for vi in [v0, v1, v2]])
-    return [mid_2 - v0[0], v0[1]], [mid_2 - v1[0], v1[1]], [mid_2 - v2[0], v2[1]]
-
-
 class MeshTexture2D:
     """
     Attention: this class assumes all meshes have the same correponding indexes with textures.
@@ -32,20 +22,22 @@ class MeshTexture2D:
     e.g. f 1/1/1 2/2/2 3/3/3
     """
 
-    def __init__(self, texture_file: str, mesh_file: str = None) -> None:
+    def __init__(
+        self, texture_file: str, mesh_file: str = None, face_idx_bias=1
+    ) -> None:
         self.texture_file = texture_file
         self.mesh_file = (
             mesh_file if mesh_file else self.texture_file.split(".")[0] + "-mesh.obj"
         )
         self.picture = self._read_picture()
         print(f"Texture shape: {self.picture.shape}")
-        self.mesh = self._read_mesh()
+        self.mesh = self._read_mesh(face_idx_bias)
         m = self.mesh["mesh"]
         dims = np.max(m, axis=0)
         self.output = np.zeros((dims[1] + 1, dims[0] + 1, self.picture.shape[-1]))
         print(f"Output shape: {self.output.shape}")
 
-    def _read_mesh(self):
+    def _read_mesh(self, face_idx_bias=1):
         with open(self.mesh_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
         lines = [line.strip() for line in lines]
@@ -63,7 +55,9 @@ class MeshTexture2D:
                 case "vt":
                     groups["texture"].append([float(x) for x in args[1:]])
                 case "f":
-                    groups["face"].append([int(x.split("/")[0]) - 1 for x in args[1:]])
+                    groups["face"].append(
+                        [int(x.split("/")[0]) - face_idx_bias for x in args[1:]]
+                    )
         # normalize mesh coordinates to [0, ]
         mesh = groups["mesh"]
         for i in range(len(mesh[0])):
@@ -135,45 +129,21 @@ class MeshTexture2D:
         m_xmin, m_xmax, m_ymin, m_ymax = face["m"]
         t_xmin, t_xmax, t_ymin, t_ymax = face["t"]
         subtexture = self.picture[t_ymin : t_ymax + 1, t_xmin : t_xmax + 1]
-        subtexture = np.flip(subtexture, axis=1)
+        # subtexture = np.flip(subtexture, axis=1)
         print(
             f"Subtexture shape: {subtexture.shape}, Mesh shape: {m_xmax - m_xmin + 1, m_ymax - m_ymin + 1}"
         )
         # fill the mesh
         for x in range(m_xmin, m_xmax + 1):
             for y in range(m_ymin, m_ymax + 1):
-                try:
-                    self.output[X - x, y, :] = subtexture[x - m_xmin, y - m_ymin, :]
-                except IndexError:
-                    print(
-                        "Warning: the size of subtexture and mesh to fill DOES NOT MATCH. Check if the size of texture is correct."
-                    )
-                    continue
+                # try:
+                self.output[X - x, Y - y, :] = subtexture[x - m_xmin, y - m_ymin, :]
+                # except IndexError:
+                #     print(
+                #         "Warning: the size of subtexture and mesh to fill DOES NOT MATCH. Check if the size of texture is correct."
+                #     )
+                #     continue
         self.pbar.update(1)
-                    
-
-
-def test():
-    """
-    This tests that the texture image is flipped horizontally.
-    """
-    texture = MeshTexture2D("textures/longwu_3_n.png")
-    t = texture.mesh["texture"]
-    m = texture.mesh["mesh"]
-    f = texture.mesh["face"]
-    print(len(f), len(t), len(m))
-    sleep(3)
-    flag = True
-    for f3 in f:
-        v0, v1, v2 = f3
-        t0, t1, t2 = t[v0], t[v1], t[v2]
-        m0, m1, m2 = m[v0], m[v1], m[v2]
-        # when readout, we need to guess and perform a flip to the texture
-        t0, t1, t2 = horizontal_flip(t0, t1, t2)
-        # t0, t1, t2 = vertical_flip(t0, t1, t2)
-        sub = np.subtract([m0, m1, m2], [t0, t1, t2])
-        flag = flag and np.all(np.all(sub, axis=0))
-    print(flag)
 
 
 def visualize_v(ax, img: np.ndarray, vertices: list[V], first=None):
@@ -185,11 +155,13 @@ def visualize_v(ax, img: np.ndarray, vertices: list[V], first=None):
 
 if __name__ == "__main__":
     texture = MeshTexture2D(
-        "assets/feiyun/feiyun_2/Texture2D/feiyun_2.png",
-        "assets/feiyun/feiyun_2/Mesh/feiyun_2-mesh.obj",
+        # "output.png",
+        "../decoded/ankeleiqi_3/ankeleiqi_3_rw_tex/0.png",
+        "../decoded/ankeleiqi_3/ankeleiqi_3_rw_tex/mesh.obj",
+        face_idx_bias=0,
     )
     # fig, ax = plt.subplots()
     # visualize_v(ax, texture.picture, texture.mesh["texture"])
     # plt.show()
     output = texture.render(processes=1)
-    Image.fromarray(output.astype(np.uint8)).save("output_n.png")
+    Image.fromarray(output.astype(np.uint8)).save("output.png")

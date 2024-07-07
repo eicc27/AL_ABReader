@@ -29,7 +29,7 @@ class ImagePipeline:
     ):
         print(f"Rendering {texture_file} with mesh objects...")
         self.render_output = out_file
-        mt2d = MeshTexture2D(texture_file, mesh_file)
+        mt2d = MeshTexture2D(texture_file, mesh_file, 0)
         output = mt2d.render(processes)
         Image.fromarray(output.astype(np.uint8)).save(self.render_output)
         print(f"Rendering done written to {out_file}.")
@@ -114,7 +114,12 @@ class ImagePipeline:
 
 if __name__ == "__main__":
     # decode
-    out_dir = "decoded"
+    # out_dir = "decoded"
     # ImagePipeline().decode("AssetBundles", out_dir, "ankeleiqi")
     # render
     render_dir = "rendered"
+    ImagePipeline().render(
+        "rendered/output.png",
+        "decoded/ankeleiqi_3/ankeleiqi_3_n_tex/0.png",
+        "decoded/ankeleiqi_3/ankeleiqi_3_n_tex/mesh.obj",
+    )
