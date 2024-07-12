@@ -140,7 +140,7 @@ class ABInput:
             print(path, size, offset)
             files.append((path, blk_data[offset : offset + size]))
         # print(len(files))
-        self.asset_files: list[tuple[str, SerializedFile]] = []
+        self.asset_files: list[SerializedFile] = []
         self.resource_files: dict[str, bytes] = {}
         for i, (path, file) in enumerate(files):
             if is_serialized(file):

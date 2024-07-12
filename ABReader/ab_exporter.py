@@ -15,16 +15,40 @@ class ABExporter:
         self.files = ab_input.data_files
         self.resources = ab_input.resource_files
 
-    def export(self, path: str):
+    def export(self, path: str = None, processes=1):
         self.texture_nums = 0
         self.path = path
+        self.results = []
+        if processes > 1:
+            from concurrent.futures import ThreadPoolExecutor as TPE
+
+            pool = TPE(processes)
         for file in self.files:
-            if type(file) == Texture2DReader:
-                self.export_texture2d(file)
-            elif type(file) == MeshReader:
-                self.export_mesh(file)
+            if processes > 1:
+                pool.submit(self._export_single, file)
             else:
-                raise NotImplementedError("Unknown file type")
+                self._export_single(file)
+        if processes > 1:
+            pool.shutdown(wait=True)
+        return None if path else self.results
+
+    def _export_single(self, file):
+        if type(file) == Texture2DReader:
+            img = self.export_texture2d(file)
+            (
+                img.save(os.path.join(self.path, f"{self.texture_nums}.png"))
+                if self.path
+                else self.results.append(img)
+            )
+        elif type(file) == MeshReader:
+            lines = self.export_mesh(file)
+            if self.path:
+                with open(os.path.join(self.path, "mesh.obj"), "w+") as f:
+                    f.writelines(lines)
+            else:
+                self.results.append(lines)
+        else:
+            raise NotImplementedError("Unknown file type")
 
     def export_texture2d(self, file: Texture2DReader):
         img_metadata = file.get_image_data()
@@ -68,20 +92,21 @@ class ABExporter:
             img = np.flip(img, axis=0)
             # we turn BGRA into RGBA (0, 1, 2, 3 -> 2, 1, 0, 3)
             img = Image.fromarray(img[..., [2, 1, 0, 3]], "RGBA")
-        img.save(os.path.join(self.path, f"{self.texture_nums}.png"))
         self.texture_nums += 1
+        return img
 
     def export_mesh(self, file: MeshReader):
         vertices = np.array(file.vertices, dtype=np.int32).reshape(-1, 3)
         uv0 = np.array(file.uv0, dtype=np.float32).reshape(-1, 2)
         indices = np.array(file.indices, dtype=np.int32).reshape(-1, 3)
-        with open(os.path.join(self.path, "mesh.obj"), "w+") as f:
-            for v in vertices:
-                v = [str(x) for x in v]
-                f.write(f"v {" ".join(v)}\n")
-            for uv in uv0:
-                uv = [str(x) for x in uv]
-                f.write(f"vt {" ".join(uv)}\n")
-            for i in indices:
-                i = [f"{x}/{x}/{x}" for x in i]
-                f.write(f"f {" ".join(i)}\n")
+        lines = []
+        for v in vertices:
+            v = [str(x) for x in v]
+            lines.append(f"v {' '.join(v)}")
+        for uv in uv0:
+            uv = [str(x) for x in uv]
+            lines.append(f"vt {' '.join(uv)}")
+        for i in indices:
+            i = [f"{x}/{x}/{x}" for x in i]
+            lines.append(f"f {' '.join(i)}")
+        return lines

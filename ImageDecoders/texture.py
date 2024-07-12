@@ -23,24 +23,33 @@ class MeshTexture2D:
     """
 
     def __init__(
-        self, texture_file: str, mesh_file: str = None, face_idx_bias=1
+        self,
+        texture_file: str = None,
+        mesh_file: str = None,
+        texture: Image.Image = None,
+        mesh: list[str] = None,
+        face_idx_bias=1,
     ) -> None:
         self.texture_file = texture_file
-        self.mesh_file = (
-            mesh_file if mesh_file else self.texture_file.split(".")[0] + "-mesh.obj"
-        )
-        self.picture = self._read_picture()
+        if texture_file and not mesh_file:
+            self.mesh_file = self.texture_file.split(".")[0] + "-mesh.obj"
+        else:
+            self.mesh_file = mesh_file
+        self.picture = self._read_picture(texture)
         print(f"Texture shape: {self.picture.shape}")
-        self.mesh = self._read_mesh(face_idx_bias)
+        self.mesh = self._read_mesh(mesh, face_idx_bias)
         m = self.mesh["mesh"]
         dims = np.max(m, axis=0)
         self.output = np.zeros((dims[1] + 1, dims[0] + 1, self.picture.shape[-1]))
         print(f"Output shape: {self.output.shape}")
 
-    def _read_mesh(self, face_idx_bias=1):
-        with open(self.mesh_file, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-        lines = [line.strip() for line in lines]
+    def _read_mesh(self, mesh: list[str], face_idx_bias=1):
+        if mesh:
+            lines = mesh
+        else:
+            with open(self.mesh_file, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            lines = [line.strip() for line in lines]
         groups = {"mesh": [], "texture": [], "face": []}
         for line in lines:
             args = line.split()
@@ -100,8 +109,8 @@ class MeshTexture2D:
         groups["face"] = faces
         return groups
 
-    def _read_picture(self):
-        picture = Image.open(self.texture_file)
+    def _read_picture(self, texture: Image):
+        picture = texture if texture else Image.open(self.texture_file)
         return np.flip(np.array(picture), axis=0)
 
     def render(self, processes: int = 1):
@@ -125,24 +134,22 @@ class MeshTexture2D:
     def _render_face(self, face):
         X, Y, _ = self.output.shape
         X, Y = X - 1, Y - 1
-        print(face)
+        # print(face)
         m_xmin, m_xmax, m_ymin, m_ymax = face["m"]
         t_xmin, t_xmax, t_ymin, t_ymax = face["t"]
         subtexture = self.picture[t_ymin : t_ymax + 1, t_xmin : t_xmax + 1]
         # subtexture = np.flip(subtexture, axis=1)
-        print(
-            f"Subtexture shape: {subtexture.shape}, Mesh shape: {m_xmax - m_xmin + 1, m_ymax - m_ymin + 1}"
-        )
+        # print(
+        #     f"Subtexture shape: {subtexture.shape}, Mesh shape: {m_xmax - m_xmin + 1, m_ymax - m_ymin + 1}"
+        # )
         # fill the mesh
-        for x in range(m_xmin, m_xmax + 1):
-            for y in range(m_ymin, m_ymax + 1):
-                # try:
-                self.output[X - x, Y - y, :] = subtexture[x - m_xmin, y - m_ymin, :]
-                # except IndexError:
-                #     print(
-                #         "Warning: the size of subtexture and mesh to fill DOES NOT MATCH. Check if the size of texture is correct."
-                #     )
-                #     continue
+        xm = X - m_xmax - 1
+        ym = Y - m_ymax - 1
+        self.output[
+            X - m_xmin : xm if xm >= 0 else None : -1,
+            Y - m_ymin : ym if ym >= 0 else None : -1,
+            :,
+        ] = subtexture[: m_xmax - m_xmin + 1, : m_ymax - m_ymin + 1]
         self.pbar.update(1)
 
 
@@ -156,12 +163,12 @@ def visualize_v(ax, img: np.ndarray, vertices: list[V], first=None):
 if __name__ == "__main__":
     texture = MeshTexture2D(
         # "output.png",
-        "../decoded/ankeleiqi_3/ankeleiqi_3_rw_tex/0.png",
-        "../decoded/ankeleiqi_3/ankeleiqi_3_rw_tex/mesh.obj",
+        "../adiliao_2_n_rw_tex/0.png",
+        "../adiliao_2_n_rw_tex/mesh.obj",
         face_idx_bias=0,
     )
-    # fig, ax = plt.subplots()
-    # visualize_v(ax, texture.picture, texture.mesh["texture"])
-    # plt.show()
-    output = texture.render(processes=1)
-    Image.fromarray(output.astype(np.uint8)).save("output.png")
+    fig, ax = plt.subplots()
+    visualize_v(ax, texture.picture, texture.mesh["texture"])
+    plt.show()
+    # output = texture.render(processes=1)
+    # Image.fromarray(output.astype(np.uint8)).save("output.png")

@@ -1,4 +1,3 @@
-from ABReader.char_input import ABCharacterInput
 from ImageDecoders.texture import MeshTexture2D
 from ImageDecoders.head import Heading
 from ImageDecoders.utils import *
@@ -18,11 +17,6 @@ class ImagePipeline:
     def __init__(self) -> None:
         self.render_output: str = None
         self.faces_output: str = None
-
-    def decode(self, base_dir: str, out_dir: str, char_name: str):
-        print(f"Decoding AB files of {char_name} to {out_dir}...")
-        ABCharacterInput(base_dir, char_name).decode(out_dir)
-        print(f"Decoding done, written to {out_dir}.")
 
     def render(
         self, out_file: str, texture_file: str, mesh_file: str = None, processes=4
