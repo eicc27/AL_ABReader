@@ -114,31 +114,36 @@ class Heading:
         device (str): Device to run computations on, either 'cuda' or 'cpu'. If cuda is available, it will be automatically set.
     """
 
-    def __init__(self, src_path: str, heads_path: str) -> None:
-        self.src_path = src_path
-        self.picture = Image.open(src_path)
-        heads = [os.path.join(heads_path, p) for p in os.listdir(heads_path)]
-        self.heads = [Image.open(h) for h in heads]
-        self.ref_head = self.heads[0]
-        # self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.device = "cpu"
-
-    def _downsample(
+    def __init__(
         self,
-        factor: int,
-    ):
+        src_path: str = None,
+        heads_path: str = None,
+        src: Image.Image = None,
+        heads: list[Image.Image] = None,
+    ) -> None:
+        self.picture = src if src else Image.open(src_path)
+        if heads_path:
+            heads_path = [os.path.join(heads_path, p) for p in os.listdir(heads_path)]
+            self.heads = [Image.open(h) for h in heads_path]
+        else:
+            self.heads = heads
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        # self.device = "cpu"
+
+    def _downsample(self, factor: int, ref_head: Image.Image):
         if factor == 1:
-            return self.picture, self.ref_head
+            return self.picture, ref_head
         return self.picture.resize(
             (self.picture.size[0] // factor, self.picture.size[1] // factor),
             Image.Resampling.BICUBIC,
-        ), self.ref_head.resize(
-            (self.ref_head.size[0] // factor, self.ref_head.size[1] // factor),
+        ), ref_head.resize(
+            (ref_head.size[0] // factor, ref_head.size[1] // factor),
             Image.Resampling.BICUBIC,
         )
 
     def static_fpn(
         self,
+        ref_head: Image.Image,
         layers=4,
         factor=2,
         optim_range: list[int] = None,
@@ -166,7 +171,7 @@ class Heading:
         bx1: int = None
         by1: int = None
         for i, rate in enumerate(downsample_rates):
-            src, head = self._downsample(rate)
+            src, head = self._downsample(rate, ref_head)
             src, head = image_to_tensor(src, self.device), image_to_tensor(
                 head, self.device
             )
@@ -200,7 +205,7 @@ class Heading:
             )
         return x.detach().cpu().numpy(), y.detach().cpu().numpy()
 
-    def replace_head(self, out_path: str, **fpn_kwargs):
+    def replace_heads(self, out_path: str = None, **fpn_kwargs):
         """
         Replace the head in the source image with the best-matched head from the head list.
 
@@ -211,34 +216,43 @@ class Heading:
         Returns:
             None
         """
-        rm_mkdir(out_path)
+        if out_path:
+            rm_mkdir(out_path)
         # replace the head image into src image at (x, y)
-        src = np.array(self.picture) / 255.0
         pbar = tqdm(total=len(self.heads))
-        for i, head in enumerate(self.heads):
-            # handles for variable head sizes
-            self.ref_head = self.heads[i]
-            x, y = self.static_fpn(**fpn_kwargs)
-            mask = np.array(self.ref_head)[..., -1] / 255.0
-            head = np.array(head) / 255.0
-            dst = src.copy()
-            dst[x : x + head.shape[0], y : y + head.shape[1], :] = alpha_blend(
-                head,
-                src[x : x + head.shape[0], y : y + head.shape[1], :],
-                mask,
-            )
-            Image.fromarray((dst * 255.0).astype(np.uint8)).save(
-                os.path.join(out_path, f"{i}.png")
-            )
+        ret = []
+        for i in enumerate(self.heads):
+            result = self.replace_head(i, **fpn_kwargs)
+            if out_path:
+                result.save(os.path.join(out_path, f"{i}.png"))
+            else:
+                ret.append(result)
             pbar.update(1)
         pbar.close()
+        if not out_path:
+            return ret
+
+    def replace_head(self, idx: int, **fpn_kwargs):
+        src = np.array(self.picture) / 255.0
+        ref_head = self.heads[idx]
+        x, y = self.static_fpn(ref_head, **fpn_kwargs)
+        mask = np.array(ref_head)[..., -1] / 255.0
+        head = np.array(ref_head) / 255.0
+        dst = src.copy()
+        dst[x : x + head.shape[0], y : y + head.shape[1], :] = alpha_blend(
+            head,
+            src[x : x + head.shape[0], y : y + head.shape[1], :],
+            mask,
+        )
+        result = Image.fromarray((dst * 255.0).astype(np.uint8))
+        return result
 
 
 if __name__ == "__main__":
     heading = Heading("output_bg.png", "heads", kernel_idx=1)
     factor = 2
     layers = 4
-    heading.replace_head(
+    heading.replace_heads(
         "longwu_bg",
         layers=layers,
         factor=factor,

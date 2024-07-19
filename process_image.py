@@ -44,7 +44,7 @@ class ImagePipeline:
             f"Finding and replacing head(from {heads_path}) to {self.render_output}..."
         )
         heading = Heading(self.render_output, heads_path)
-        heading.replace_head(out_path=self.faces_output, **fpn_kwargs)
+        heading.replace_heads(out_path=self.faces_output, **fpn_kwargs)
         print(f"Head replacing done, written to {out_dir}")
         return self
 
