@@ -11,10 +11,10 @@ It is focused at:
 
 ## BSRGAN
 
-The [**Deep Blind Image Super-Resolution**](https://github.com/cszn/BSRGAN) network implemented by *Kai Zhang, Jingyun Liang, Luc Van Gool and Radu Timofte*. The project truncates exmaple data and utilizes only BSRGAN and BSRGANx2 to enhance different shapes of images. The project also add an interface to integrate BSRGAN process to batch image processing pipeline. Like its predessor [ESRGAN](https://arxiv.org/abs/1809.00219), it leverages RRDB (Residual-in-Residual Dense Block) to enhance the image quality.
+The [**Deep Blind Image Super-Resolution**](https://github.com/cszn/BSRGAN) network implemented by *Kai Zhang, Jingyun Liang, Luc Van Gool and Radu Timofte*. The project truncates exmaple data and utilizes only BSRGAN and BSRGANx2 to enhance different shapes of images. The project also add an interface to integrate BSRGAN process to batch image processing pipeline. Like its predecessor [ESRGAN](https://arxiv.org/abs/1809.00219), it leverages RRDB (Residual-in-Residual Dense Block) to enhance the image quality.
 
 ### Performance specs
-BSRGANx2 can enhance the whole image to nearly 8K, and BSRGAN to 4K in a single RTX-4090 without much GRAM swapping. For a single character with ~10 face replications, an RTX 4090 can do the job in an accepatble time span.
+BSRGANx2 can enhance the whole image to nearly 8K, and BSRGAN to 4K in a single RTX 4090 without much GRAM swapping. For a single character with ~10 face replications, an RTX 4090 can do the job in an accepatble time span.
 
 ## ImageDecoders
 
